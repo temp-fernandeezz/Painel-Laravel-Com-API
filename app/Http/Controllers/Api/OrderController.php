@@ -7,12 +7,17 @@ use App\Models\Order;
 use Illuminate\Http\Request;
 use App\Data\OrderData;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
     public function index()
     {
-        $orders = Order::with(['client', 'products'])->paginate(10);
+        $user = Auth::user();
+        $orders = Order::with(['client', 'products'])
+            ->where('client_id', $user->id)
+            ->get();
+
         return response()->json($orders);
     }
 

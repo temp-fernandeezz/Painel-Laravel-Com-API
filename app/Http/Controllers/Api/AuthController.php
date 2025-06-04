@@ -25,12 +25,16 @@ class AuthController extends Controller
             ], 401);
         }
 
-        $token = $user->createToken('api-token')->plainTextToken;
+        if ($request->wantsJson()) {
+            $token = $user->createToken('api-token')->plainTextToken;
+            return response()->json([
+                'user' => $user->only(['id', 'name', 'email']),
+                'token' => $token
+            ]);
+        }
 
-        return response()->json([
-            'user' => $user,
-            'token' => $token
-        ]);
+        Auth::guard('web')->login($user);
+        return response()->noContent();
     }
 
     public function logout(Request $request)
