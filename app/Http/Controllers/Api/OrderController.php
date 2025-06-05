@@ -21,6 +21,17 @@ class OrderController extends Controller
         return response()->json($orders);
     }
 
+    public function show(Order $order)
+    {
+        $user = Auth::user();
+
+        if ($order->client_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        return response()->json($order->load(['client', 'products']));
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -105,9 +116,12 @@ class OrderController extends Controller
         }
     }
 
-    public function destroy(Order $order)
+    public function destroy($id)
     {
+        $order = Order::findOrFail($id);
         $order->delete();
-        return response()->json(null, 204);
+
+        return response()->json(['message' => 'Pedido ocultado com sucesso.']);
     }
+
 }

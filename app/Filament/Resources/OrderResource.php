@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Filament\Resources\OrderResource\Pages;
 use App\Filament\Resources\OrderResource\RelationManagers;
 use App\Models\Order;
+use App\Models\Product;
 use Filament\Forms;
 use Filament\Tables\Columns\{TextColumn, BadgeColumn};
 use Filament\Forms\Form;
@@ -21,7 +22,6 @@ class OrderResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
     protected static ?string $navigationGroup = 'Vendas';
-    protected static ?int $navigationSort = 2;
     protected static ?string $navigationLabel = 'Pedidos';
 
     public static function form(Form $form): Form
@@ -34,35 +34,29 @@ class OrderResource extends Resource
                     ->label('Cliente')
                     ->columnSpanFull(),
 
-                Repeater::make('order_items') 
+                Repeater::make('products')
                     ->label('Produtos')
+                    ->relationship('products')
                     ->schema([
                         Select::make('product_id')
                             ->label('Produto')
-                            ->options(
-                                \App\Models\Product::all()->pluck('name', 'id')
-                            )
-                            ->required(),
+                            ->options(Product::all()->pluck('name', 'id'))
+                            ->required()
+                            ->live()
+
+                            ->columnSpan(2),
 
                         TextInput::make('quantity')
+                            ->label('Quantidade')
                             ->numeric()
-                            ->required()
-                            ->label('Quantidade'),
-
-                        TextInput::make('unit_price')
-                            ->numeric()
-                            ->required()
-                            ->label('Preço Unitário'),
-
-                        TextInput::make('total')
-                            ->numeric()
-                            ->label('Total')
-                            ->disabled()
-                            ->dehydrated(false),
+                            ->default(1)
+                            ->live()
+                            ->required(),
                     ])
                     ->columns(4)
                     ->defaultItems(1)
                     ->columnSpanFull(),
+
             ]);
     }
 
@@ -70,17 +64,21 @@ class OrderResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('client.name')->label('Cliente')->searchable(),
-                TextColumn::make('products_count')
-                    ->counts('products')
-                    ->label('Nº Produtos'),
+                TextColumn::make('client.name')
+                    ->label('Cliente')
+                    ->searchable(),
+
+                TextColumn::make('products')
+                    ->label('Produtos')
+                    ->formatStateUsing(fn($record) => $record->products->pluck('name')->join(', '))
+                    ->wrap(),
+
                 TextColumn::make('created_at')
                     ->label('Criado em')
                     ->dateTime('d/m/Y H:i'),
+                    
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
             ->actions([
                 Tables\Actions\EditAction::make(),
             ])
@@ -90,6 +88,7 @@ class OrderResource extends Resource
                 ]),
             ]);
     }
+
 
     public static function getRelations(): array
     {
